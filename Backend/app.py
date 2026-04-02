@@ -1,0 +1,44 @@
+from flask import Flask, render_template, request, redirect, url_for, flash
+
+app = Flask(__name__, template_folder="../Frontend")
+app.secret_key = "super-secret-for-flash"
+
+# In-memory storage (no DB)
+tasks = []  # each item is {"name": "", "task": "", "status": ""}
+
+def add_task(name, task, status):
+    """Simple function to insert a task into the list."""
+    tasks.append({"name": name, "task": task, "status": status})
+
+@app.route("/", methods=["GET"])
+def index():
+    """Show form + task table in index.html."""
+    return render_template("index.html", tasks=tasks)
+
+@app.route("/add", methods=["POST"])
+def add():
+    """Handle form POST submission."""
+    try:
+        name = request.form.get("name", "").strip()
+        task = request.form.get("task", "").strip()
+        status = request.form.get("status", "Pending")
+
+        if not name or not task:
+            flash("Name and Task are required.", "error")
+            return redirect(url_for("index"))
+
+        add_task(name, task, status)
+        flash("Task added successfully.", "success")
+        return redirect(url_for("index"))
+
+    except Exception as ex:
+        flash(f"Error: {ex}", "error")
+        return redirect(url_for("index"))
+
+@app.route("/view", methods=["GET"])
+def view():
+    """Bonus route to explicitly view tasks."""
+    return render_template("index.html", tasks=tasks)
+
+if __name__ == "__main__":
+    app.run(debug=True)
