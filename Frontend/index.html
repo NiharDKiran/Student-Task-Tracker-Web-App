@@ -1,57 +1,296 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Student Task Tracker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --accent: #00e5ff;
+            --accent-hover: #00b8cc;
+        }
 
-app = Flask(__name__, template_folder="../Frontend")
-app.secret_key = "super-secret-for-flash"
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 40px 20px;
+            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+            min-height: 100vh;
+            color: var(--text-primary);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
 
-# In-memory storage (no DB)
-tasks = []  # each item is {"name": "", "task": "", "status": ""}
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            animation: fadeIn 0.6s ease-out;
+        }
 
-def add_task(name, task, status):
-    """Simple function to insert a task into the list."""
-    tasks.append({"name": name, "task": task, "status": status})
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
-@app.route("/", methods=["GET"])
-def index():
-    """Show form + task table in index.html."""
-    return render_template("index.html", tasks=tasks)
+        h1 {
+            text-align: center;
+            margin-top: 0;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+            user-select: none;
+        }
 
-@app.route("/add", methods=["POST"])
-def add():
-    """Handle form POST submission."""
-    try:
-        name = request.form.get("name", "").strip()
-        task = request.form.get("task", "").strip()
-        status = request.form.get("status", "Pending")
+        /* Form Elements */
+        .form-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+        }
 
-        if not name or not task:
-            flash("Name and Task are required.", "error")
-            return redirect(url_for("index"))
+        .input-wrapper {
+            flex: 1;
+            min-width: 200px;
+        }
 
-        add_task(name, task, status)
-        flash("Task added successfully.", "success")
-        return redirect(url_for("index"))
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 500;
+        }
 
-    except Exception as ex:
-        flash(f"Error: {ex}", "error")
-        return redirect(url_for("index"))
+        input[type="text"], select {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            color: white;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+            outline: none;
+        }
 
-@app.route("/delete/<int:task_id>", methods=["POST"])
-def delete(task_id):
-    """Delete a task by its index."""
-    try:
-        if 0 <= task_id < len(tasks):
-            tasks.pop(task_id)
-            flash("Task deleted successfully.", "success")
-        else:
-            flash("Invalid task ID.", "error")
-    except Exception as ex:
-        flash(f"Error: {ex}", "error")
-    return redirect(url_for("index"))
+        input[type="text"]:focus, select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(0, 229, 255, 0.2);
+        }
+        
+        select option {
+            background: #203a43;
+            color: white;
+        }
 
-@app.route("/view", methods=["GET"])
-def view():
-    """Bonus route to explicitly view tasks."""
-    return render_template("index.html", tasks=tasks)
+        button {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, var(--accent), #0072ff);
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 229, 255, 0.3);
+            height: 44px; /* matches inputs */
+        }
 
-if __name__ == "__main__":
-    app.run(debug=True)
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 229, 255, 0.4);
+        }
+
+        .btn-delete {
+            background: rgba(231, 76, 60, 0.2);
+            color: #ff6b6b;
+            border: 1px solid rgba(231, 76, 60, 0.3);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            height: auto;
+            box-shadow: none;
+        }
+
+        .btn-delete:hover {
+            background: rgba(231, 76, 60, 0.4);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(231, 76, 60, 0.2);
+            color: white;
+        }
+
+        /* Messages */
+        .message {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            font-size: 0.9rem;
+            animation: slideIn 0.4s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .success { background: rgba(46, 204, 113, 0.2); border: 1px solid rgba(46, 204, 113, 0.3); color: #2ecc71; }
+        .error { background: rgba(231, 76, 60, 0.2); border: 1px solid rgba(231, 76, 60, 0.3); color: #e74c3c; }
+
+        /* Table */
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-top: 10px;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 16px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        th {
+            color: var(--text-secondary);
+            font-weight: 500;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+            border-top: 1px solid var(--glass-border);
+        }
+
+        tbody tr {
+            transition: background 0.2s ease;
+        }
+
+        tbody tr:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .status-pending { background: rgba(241, 196, 15, 0.2); color: #f1c40f; border: 1px solid rgba(241, 196, 15, 0.3); }
+        .status-completed { background: rgba(46, 204, 113, 0.2); color: #2ecc71; border: 1px solid rgba(46, 204, 113, 0.3); }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 0;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+        
+        @media (max-width: 600px) {
+            .form-group { flex-direction: column; align-items: stretch; }
+            button { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Student Task Tracker</h1>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div class="message {{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <form id="taskForm" action="{{ url_for('add') }}" method="post">
+            <div class="form-group">
+                <div class="input-wrapper">
+                    <label for="name">Student Name</label>
+                    <input type="text" id="name" name="name" placeholder="E.g. Jane Doe" autocomplete="off" />
+                </div>
+                <div class="input-wrapper">
+                    <label for="task">Subject / Task</label>
+                    <input type="text" id="task" name="task" placeholder="E.g. Math Homework" autocomplete="off" />
+                </div>
+                <div class="input-wrapper" style="min-width: 120px; flex: 0.5;">
+                    <label for="status">Status</label>
+                    <select id="status" name="status">
+                        <option value="Pending">Pending</option>
+                        <option value="Completed">Completed</option>
+                    </select>
+                </div>
+                <button type="submit">Add Task</button>
+            </div>
+        </form>
+
+        {% if tasks %}
+        <table>
+            <thead>
+                <tr>
+                    <th width="5%">#</th>
+                    <th width="30%">Name</th>
+                    <th width="35%">Task</th>
+                    <th width="20%">State</th>
+                    <th width="10%">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in tasks %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td><b>{{ t.name }}</b></td>
+                    <td>{{ t.task }}</td>
+                    <td>
+                        <span class="status-badge {% if t.status == 'Completed' %}status-completed{% else %}status-pending{% endif %}">
+                            {{ t.status }}
+                        </span>
+                    </td>
+                    <td>
+                        <form action="{{ url_for('delete', task_id=loop.index0) }}" method="post" style="margin:0;">
+                            <button type="submit" class="btn-delete" title="Delete Task">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+            <div class="empty-state">No tasks available. Add your first task above.</div>
+        {% endif %}
+    </div>
+
+    <script>
+        document.getElementById("taskForm").addEventListener("submit", function(e) {
+            const name = document.getElementById("name").value.trim();
+            const task = document.getElementById("task").value.trim();
+            if(!name || !task) {
+                e.preventDefault();
+                alert("Both Name and Task fields are required.");
+            }
+        });
+    </script>
+</body>
+</html>
